@@ -115,8 +115,8 @@ public class sFlightRadar : MonoBehaviour {
     bool myPrimaryDataProc = true; // Выполняется первичная обработка данных (в фоновом потоке), вторичную обработку не начинать!
     bool mySecondaryDataProc = false; // Выполняется вторичная обработка данных (в корутине), первичную обработку не начинать!
     bool myBanner1AddInfo = false; // Выводить ли на баннер с краткой информацией дополнительную информацию
-    [SerializeField]
-    bool _DataFromWeb = true; // Получать данные из интернета. В противном случае из файла Record.txt
+    //[SerializeField]
+    public bool DataFromWeb = true; // Получать данные из интернета. В противном случае из файла Record.txt
 
 
     // ******************************************************************
@@ -537,7 +537,7 @@ public class sFlightRadar : MonoBehaviour {
         myObjTr.gameObject.SetActive(false);
 
         // Запуск корутины получения данных
-        if (_DataFromWeb)
+        if (DataFromWeb)
         {
             StartCoroutine(_WebData.GetWebData()); // web данные от сервера
         }
@@ -1476,7 +1476,7 @@ public class sFlightRadar : MonoBehaviour {
                     myPlaneVis[myKeys[i]] = myPlane;
                 }
                 // Удалим устаревший самолет и его записи во всех словарях. Также удалим самолет, если он "приземлися"
-                else if (((_WebData.ResponseTime - myPlane.Time) > 15000))
+                else if (((_WebData.ResponseTime - myPlane.Time) > 15000 * _Time.TimeSpeed))
                 {
                     myPlaneToDelete = true;
                     _Record.MyLog("ProcData", myKeys[i], "%%% myFuncProcData(): Будем удалять устаревший самолет " + myKeys[i] + ". Время последнего приема данных от сервера = " + _WebData.ResponseTime + ", время поступления последних данных о самолете = " + myPlane.Time);
@@ -2162,9 +2162,9 @@ public class sFlightRadar : MonoBehaviour {
                     // Масштабирование модели самолета при приближении к земле
                     float myHeight = myPlane.GO.transform.position.y;
                     float myScale = 1.0f;
-                    if ((myHeight < 1000.0f) || (myPlane.Model.localScale.x < 30.0f)) // высота, ниже которой начинается масшатбирование - 500 метров
+                    if ((myHeight < 1000.0f) || (myPlane.Model.localScale.x < 10.0f)) // высота, ниже которой начинается масшатбирование - 500 метров
                     {
-                        myScale = Mathf.Clamp(((myHeight + 140.0f) / 38.0f), 5.0f, 30.0f);
+                        myScale = Mathf.Clamp(((myHeight + 140.0f) / 38.0f), 5.0f, 10.0f);
                         myPlane.Model.localScale = myPlane.GO.transform.localScale * myScale;
                     }
 
@@ -2173,7 +2173,7 @@ public class sFlightRadar : MonoBehaviour {
                     // Масштабирование баннера
                     //myDistance = Vector3.Distance(Camera.main.transform.position, myPlane.GO.transform.position);
                     float myDistance = (myPlane.GO.transform.position - Camera.main.transform.position).magnitude;
-                    myScale = Mathf.Clamp(myDistance / 5000, 1.0f, 10.0f);
+                    myScale = Mathf.Clamp(myDistance / 5000, 1.0f, 25.0f);
                     myPlane.Banner1.localScale = myPlane.GO.transform.localScale * myScale;
                     // Коррекция положения баннера относительно самолета
                     myPos = myPlane.Banner1.localPosition;
@@ -2186,7 +2186,15 @@ public class sFlightRadar : MonoBehaviour {
                     }
                     else
                     {
-                        myPlane.Banner1Alt.text = "Alt(ft)=" + (Math.Round(myPlane.GO.transform.position.y, 2) / myFeet).ToString("####0.00"); // Высота в футах
+                        myPlane.Banner1Alt.text = "FL " + (Math.Round(myPlane.GO.transform.position.y / 100, 2) / myFeet).ToString("####0"); // Высота (эшелон) в футах
+                    }
+                    if(myPlane.Speed.y > 0) // Указатель вертикальной скорости
+                    {
+                        myPlane.Banner1Alt.text = myPlane.Banner1Alt.text + " ▲";
+                    }
+                    else if (myPlane.Speed.y < 0)
+                    {
+                        myPlane.Banner1Alt.text = myPlane.Banner1Alt.text + " ▼";
                     }
                     //myPlane.Banner1Text3.text = "Alt=" + Math.Round(myPlane.GO.transform.position.y, 2) + " Pitch=" + myPlane.GO.transform.eulerAngles.x;
                 }
@@ -2274,7 +2282,7 @@ public class sFlightRadar : MonoBehaviour {
         myBanner2Fields["To"].text = "To: " + myOnePlanePars.myTo;
 
         myBanner2.gameObject.SetActive(true);
-
+        _WebData.BuildTunnel(myKey);
     }
 
 

@@ -38,10 +38,10 @@
 
             print("myStartLatitude = " + myFlightRadar.myStartLatitude + "myStartLongitude = " + myFlightRadar.myStartLongitude);
 
-            _mapVisualizer.Initialize(this, _fileSouce);
-			_tileProvider.Initialize(this);
+            //_mapVisualizer.Initialize(this, _fileSouce);
+			//_tileProvider.Initialize(this);
 
-			SendInitialized();
+			//SendInitialized();
 		}
 	}
 }

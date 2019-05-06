@@ -99,7 +99,7 @@ public class sMortarMovement : MonoBehaviour
         else // Все остальное управление
         {
             // Команда на перелет домой
-            if (Input.GetKeyDown("h"))
+            if (Input.GetKeyDown("h") || Input.GetButtonDown("Home_1") || Input.GetButtonDown("Home_2"))
             {
                 transform.parent = null; // Выйти в корень иерархии сцены
                 myStartTime = Time.time;

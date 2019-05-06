@@ -188,6 +188,11 @@ namespace VRStandardAssets.Utils
             {
                 myGO.SetActive(false);
             }
+            myGO = GameObject.Find("SkyTunnels");
+            foreach (Transform Tunn in myGO.transform)
+            {
+                Destroy(Tunn.gameObject);
+            }
         }
     }
 }

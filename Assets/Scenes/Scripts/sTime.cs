@@ -9,8 +9,7 @@ using System.Globalization;
 public class sTime : MonoBehaviour
 {
     // Коэфициент ускорения или замедления времени
-    [SerializeField]
-    float _TimeSpeed = 1.0f;
+    public float TimeSpeed = 1.0f;
 
     // Текстовый объект для вывода на экран времени
     [SerializeField]
@@ -47,7 +46,7 @@ public class sTime : MonoBehaviour
 
     public int CurrentTime()
     {
-        return (int)(_StopWatch.ElapsedMilliseconds * _TimeSpeed - StartTime);
+        return (int)(_StopWatch.ElapsedMilliseconds * TimeSpeed - StartTime);
     }
 
     private void Update()
