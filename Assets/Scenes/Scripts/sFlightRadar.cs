@@ -260,6 +260,8 @@ public class sFlightRadar : MonoBehaviour {
         public Text Banner1Model;
         public Text Banner1Alt;
         public Image Banner1Panel;
+        public Transform Corner_BL;
+        public Transform Corner_BR;
         public Transform Model;
         public String PredictionReason;
         public int BadPosCounter;
@@ -1110,6 +1112,8 @@ public class sFlightRadar : MonoBehaviour {
                         myPlane.Banner1Model = myPlaneVis[myKey].Banner1Model;
                         myPlane.Banner1Alt = myPlaneVis[myKey].Banner1Alt;
                         myPlane.Banner1Panel = myPlaneVis[myKey].Banner1Panel;
+                        myPlane.Corner_BL = myPlaneVis[myKey].Corner_BL;
+                        myPlane.Corner_BR = myPlaneVis[myKey].Corner_BR;
                         myPlane.Model = myPlaneVis[myKey].Model;
                         myPlane.TrackPoints = myPlaneVis[myKey].TrackPoints;
                         myPlane.StartBezier = myPlaneVis[myKey].StartBezier;
@@ -1216,6 +1220,8 @@ public class sFlightRadar : MonoBehaviour {
                         myPlane.Banner1Model = myPlaneVis[myKey].Banner1Model;
                         myPlane.Banner1Alt = myPlaneVis[myKey].Banner1Alt;
                         myPlane.Banner1Panel = myPlaneVis[myKey].Banner1Panel;
+                        myPlane.Corner_BL = myPlaneVis[myKey].Corner_BL;
+                        myPlane.Corner_BR = myPlaneVis[myKey].Corner_BR;
                         myPlane.Model = myPlaneVis[myKey].Model;
                         myPlane.TrackPoints = myPlaneVis[myKey].TrackPoints;
                         myPlane.StartBezier = myPlaneVis[myKey].StartBezier;
@@ -1390,6 +1396,12 @@ public class sFlightRadar : MonoBehaviour {
                                 break;
                             case "Panel":
                                 myPlane.Banner1Panel = myObjTr2.GetComponent<Image>(); // Фоновая картинка баннера
+                                break;
+                            case "Corner_BL":
+                                myPlane.Corner_BL = myObjTr2; // Нижний левый угол баннера
+                                break;
+                            case "Corner_BR":
+                                myPlane.Corner_BR = myObjTr2; // Нижний правый угол баннера
                                 break;
                         }
                     }
@@ -2179,6 +2191,25 @@ public class sFlightRadar : MonoBehaviour {
                     myPos = myPlane.Banner1.localPosition;
                     myPos.y = 180.0f * myScale + 180.0f;
                     myPlane.Banner1.localPosition = myPos;
+
+                    // Избавиться от наложения баннеров
+                    //RaycastHit hitBL;
+                    //Ray rayBL = new Ray(myPlane.Corner_BL.position, Camera.main.transform.position - myPlane.Corner_BL.position);
+                    //Physics.Raycast(rayBL, out hitBL);
+                    //if (Input.GetKeyDown("3"))
+                    //{
+                    //    print(myPlane.Corner_BL.position + " " + Camera.main.transform.position + " " + (Camera.main.transform.position - myPlane.Corner_BL.position));
+                    //    print("hit = " + hitBL + " name = " + hitBL.transform.name + " hit.collider" + hitBL.collider);
+                    //}
+                    //RaycastHit hitBR;
+                    //Ray rayBR = new Ray(myPlane.Corner_BR.position, Camera.main.transform.position - myPlane.Corner_BR.position);
+                    //Physics.Raycast(rayBR, out hitBR);
+                    //if (Input.GetKeyDown("3"))
+                    //{
+                    //    print(myPlane.Corner_BR.position + " " + Camera.main.transform.position + " " + (Camera.main.transform.position - myPlane.Corner_BR.position));
+                    //    print("hit = " + hitBR + " name = " + hitBR.transform.name + " hit.collider" + hitBR.collider);
+                    //}
+
                     // Текс баннера (третья строка - высота)
                     if (mySI)
                     {
