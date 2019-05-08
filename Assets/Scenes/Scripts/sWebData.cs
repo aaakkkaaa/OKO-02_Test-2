@@ -30,6 +30,10 @@ public class sWebData : MonoBehaviour
     [SerializeField]
     float _WebCycleTime = 5.0f;
 
+    // Рисовать каждые N ворота небесного туннеля.
+    [SerializeField]
+    int _FramePaintCount = 3;
+
     // Полный текст запроса к серверу
     public String URL;
 
@@ -322,7 +326,8 @@ public class sWebData : MonoBehaviour
 
         // Данные одного туннеля
         TunneData OnePlaneTunnel = _SkyTunnel[myKey];
-        for (int i = 1; i < OnePlaneTunnel.time_position.Count; i++)
+
+        for (int i = 1; i < OnePlaneTunnel.time_position.Count; i += _FramePaintCount)
         {
             // Создать новые ворота
             Transform NewFrame = Instantiate(_SampleFrame);
