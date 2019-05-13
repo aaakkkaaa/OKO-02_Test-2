@@ -2193,22 +2193,38 @@ public class sFlightRadar : MonoBehaviour {
                     myPlane.Banner1.localPosition = myPos;
 
                     // Избавиться от наложения баннеров
-                    //RaycastHit hitBL;
-                    //Ray rayBL = new Ray(myPlane.Corner_BL.position, Camera.main.transform.position - myPlane.Corner_BL.position);
-                    //Physics.Raycast(rayBL, out hitBL);
-                    //if (Input.GetKeyDown("3"))
-                    //{
-                    //    print(myPlane.Corner_BL.position + " " + Camera.main.transform.position + " " + (Camera.main.transform.position - myPlane.Corner_BL.position));
-                    //    print("hit = " + hitBL + " name = " + hitBL.transform.name + " hit.collider" + hitBL.collider);
-                    //}
-                    //RaycastHit hitBR;
-                    //Ray rayBR = new Ray(myPlane.Corner_BR.position, Camera.main.transform.position - myPlane.Corner_BR.position);
-                    //Physics.Raycast(rayBR, out hitBR);
-                    //if (Input.GetKeyDown("3"))
-                    //{
-                    //    print(myPlane.Corner_BR.position + " " + Camera.main.transform.position + " " + (Camera.main.transform.position - myPlane.Corner_BR.position));
-                    //    print("hit = " + hitBR + " name = " + hitBR.transform.name + " hit.collider" + hitBR.collider);
-                    //}
+                    Ray rayBL = new Ray(myPlane.Corner_BL.position, Camera.main.transform.position - myPlane.Corner_BL.position);
+                    Physics.Raycast(rayBL, out RaycastHit hitBL);
+                    Debug.DrawLine(rayBL.origin, hitBL.point, Color.red);
+                    for(int i=0; i<20; i++)
+                    {
+                        if (hitBL.collider == null)
+                        {
+                            break;
+                        }
+                        myPlane.Banner1.Translate(Vector3.up * 100);
+                    }
+
+                    if (Input.GetKeyDown("3"))
+                    {
+                        //print(myPlane.Corner_BL.position + " " + Camera.main.transform.position + " " + (Camera.main.transform.position - myPlane.Corner_BL.position));
+                        if(hitBL.collider != null)
+                        {
+                            print("hit = " + hitBL + " name = " + hitBL.transform.name + " hit.collider" + hitBL.collider);
+                        }
+                    }
+                    RaycastHit hitBR;
+                    Ray rayBR = new Ray(myPlane.Corner_BR.position, Camera.main.transform.position - myPlane.Corner_BR.position);
+                    Physics.Raycast(rayBR, out hitBR);
+                    Debug.DrawLine(rayBR.origin, hitBR.point, Color.red);
+                    if (Input.GetKeyDown("3"))
+                    {
+                        //print(myPlane.Corner_BR.position + " " + Camera.main.transform.position + " " + (Camera.main.transform.position - myPlane.Corner_BR.position));
+                        if (hitBL.collider != null)
+                        {
+                            print("hit = " + hitBR + " name = " + hitBR.transform.name + " hit.collider" + hitBR.collider);
+                        }
+                    }
 
                     // Текс баннера (третья строка - высота)
                     if (mySI)
