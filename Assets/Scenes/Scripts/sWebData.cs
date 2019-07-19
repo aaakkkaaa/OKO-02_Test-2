@@ -304,7 +304,7 @@ public class sWebData : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void Update_eee()
     {
 
         // Клавиша 1 - Построить тоннель для 244210

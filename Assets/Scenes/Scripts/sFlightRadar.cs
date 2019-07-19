@@ -353,7 +353,7 @@ public class sFlightRadar : MonoBehaviour {
 
         // OpenSky
         print("Контрольная точка аэродрома: " + myStartLatitude + "," + myStartLongitude);
-        // Границы прямоугольника +/-(myDistance/2)
+        // Границы прямоугольника +/- myDistance
         float myLat;
         float.TryParse(myStartLatitude, out myLat);
         float myLong;
