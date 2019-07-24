@@ -2161,6 +2161,9 @@ public class sFlightRadar : MonoBehaviour {
                             // Время ~1/4 общего времени движения по текущему отрезку кривой Безье
                             myNewEu.z = Mathf.LerpAngle(myPlane.TrackPoints[0].eulerAngles.z, myPlane.TrackPoints[1].eulerAngles.z, myTim * 4);
 
+                            //ВРЕМЕННО: угол крена обнуляем
+                            myNewEu.z = 0.0f;
+
                             // Применим угол к модели самолета
                             myPlane.GO.transform.eulerAngles = myNewEu;
 
