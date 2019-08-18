@@ -1806,6 +1806,10 @@ public class sFlightRadar : MonoBehaviour {
             // Создаем список ключей из коллекции, чтобы не было ошибки InvalidOperationException: Collection was modified; enumeration operation may not execute (может быть изменена в фоновом потоке)
             List<String> myKeys = new List<String>(myPlaneVisKeys);
 
+            // Для сдвига баннеров при наложении. Создаем словарь с расстояниями до самолетов
+            // Словарь - текущие расстояния от камеры до самолетов. Ключ - значение расстояния, значения - код ИКАО самолета
+            Dictionary<float, String> myPlaneDistance = new Dictionary<float, String>();
+
             // Двигаем самолеты
             foreach (String myKey in myKeys)
             {
@@ -2185,11 +2189,21 @@ public class sFlightRadar : MonoBehaviour {
 
                     // Ориентация баннера
                     myPlane.Banner1.LookAt(Camera.main.transform);
-                    // Масштабирование баннера
+                    // Масштабирование баннера в зависимости от расстояния до камеры
                     //myDistance = Vector3.Distance(Camera.main.transform.position, myPlane.GO.transform.position);
                     float myDistance = (myPlane.GO.transform.position - Camera.main.transform.position).magnitude;
                     myScale = Mathf.Clamp(myDistance / 5000, 1.0f, 25.0f);
                     myPlane.Banner1.localScale = myPlane.GO.transform.localScale * myScale;
+                    // Добавим полученное расстояние в словарь
+                    if (myPlaneDistance.ContainsKey(myDistance))
+                    {
+                        myPlaneDistance.Add(myDistance + 0.01f, myKey); // если совпадут расстояния у двух разных самолетов
+                    }
+                    else
+                    {
+                        myPlaneDistance.Add(myDistance, myKey);
+                    }
+
                     // Коррекция положения баннера относительно самолета
                     myPos = myPlane.Banner1.localPosition;
                     myPos.y = 180.0f * myScale + 180.0f;
@@ -2229,7 +2243,7 @@ public class sFlightRadar : MonoBehaviour {
                     //    }
                     //}
 
-                    // Текс баннера (третья строка - высота)
+                    // Текст баннера (третья строка - высота)
                     if (mySI)
                     {
                         myPlane.Banner1Alt.text = "Alt(m)=" + Math.Round(myPlane.GO.transform.position.y, 2).ToString("####0.00"); // Высота в метрах
@@ -2249,6 +2263,22 @@ public class sFlightRadar : MonoBehaviour {
                     //myPlane.Banner1Text3.text = "Alt=" + Math.Round(myPlane.GO.transform.position.y, 2) + " Pitch=" + myPlane.GO.transform.eulerAngles.x;
                 }
             }
+
+            // Избавиться от наложения баннеров
+            // Словарь расстояний от камеры до самолетов myPlaneDistance
+            // Коллекция ключей словаря
+            Dictionary<float, String>.KeyCollection myPlaneDistanceKeys = myPlaneDistance.Keys;
+            List<float> myDistances = new List<float>(myPlaneDistanceKeys);
+            myDistances.Sort();
+
+            //if(myDistances.Count > 4)
+            //{
+            //    print("==================== Расстояния от камеры до самолетов =====================");
+            //    for (int i=0; i<myDistances.Count; i++)
+            //    {
+            //        print(myDistances[i] + " "  + myPlaneDistance[myDistances[i]]);
+            //    }
+            ////}
 
             // Второй баннер с подробной информацией
             if (myBanner2.gameObject.activeInHierarchy && myPlaneVis.ContainsKey(mySelectedPlane))
