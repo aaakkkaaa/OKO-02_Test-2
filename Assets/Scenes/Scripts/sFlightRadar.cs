@@ -2238,78 +2238,29 @@ public class sFlightRadar : MonoBehaviour {
             List<float> myDistances = new List<float>(myPlaneDistance.Keys);
             myDistances.Sort();
 
-            //if(myDistances.Count > 4)
-            //{
-            //    print("==================== Расстояния от камеры до самолетов =====================");
-            //    for (int i=0; i<myDistances.Count; i++)
-            //    {
-            //        print(myDistances[i] + " "  + myPlaneDistance[myDistances[i]]);
-            //    }
-            ////}
-
             // Избавиться от наложения баннеров - 4
             print("==================== Избавиться от наложения баннеров - 4 =====================");
-            for (int i = 1; i < myDistances.Count; i++) // начинаем со второго по дальности самолета
+            // Для каждого самолета, начиная со второго по дальности
+            for (int i = 1; i < myDistances.Count; i++)
             {
-                MyPlaneVisual myPlane = myPlaneVis[myPlaneDistance[myDistances[i]]]; // текущие параметры полета (малая структура)
-                // Пускаем луч от правого нижнего угла баннера в камеру
-                Ray rayBR = new Ray(myPlane.Corner_BR.position, Camera.main.transform.position - myPlane.Corner_BR.position);
-                if (Physics.Raycast(rayBR, out RaycastHit hitBR))
+                // Текущие параметры полета (малая структура)
+                MyPlaneVisual myPlane = myPlaneVis[myPlaneDistance[myDistances[i]]];
+                // Положение баннера без сдвига из-за наложения
+                float myBannerPosShift = myPlane.Banner1.localPosition.y / 2.0f;
+
+                int j = 0;
+                while (MyFuncBannerOcclusion(myPlane))
                 {
-                    print("Рейс " + myPlane.Call + ": Что-то пересекли: " + hitBR.transform);
-//                    print("Рейс " + myPlane.Call + ": Что-то пересекли: " + myPlaneVis[hitBR.transform.parent.name].Call);
-                    Debug.DrawLine(rayBR.origin, hitBR.point, Color.red);
+                    Vector3 myPos = myPlane.Banner1.localPosition;
+                    myPos.y = myPos.y + myBannerPosShift;
+                    myPlane.Banner1.localPosition = myPos;
+                    if (j > 20)
+                    {
+                        break;
+                    }
+                    j++;
                 }
-                //else
-                //{
-                //    print("Рейс " + myPlane.Call + ": Ничего не пересекли");
-                //}
-
-                //for (int j = 0; j < 20; j++)
-                //{
-                //    if (hitBR.collider == null)
-                //    {
-                //        break;
-                //    }
-                //    myPlane.Banner1.Translate(Vector3.up * 100);
-                //}
             }
-
-            //// Избавиться от наложения баннеров
-            //Ray rayBL = new Ray(myPlane.Corner_BL.position, Camera.main.transform.position - myPlane.Corner_BL.position);
-            //Physics.Raycast(rayBL, out RaycastHit hitBL);
-            //Debug.DrawLine(rayBL.origin, hitBL.point, Color.red);
-            //for(int i=0; i<20; i++)
-            //{
-            //    if (hitBL.collider == null)
-            //    {
-            //        break;
-            //    }
-            //    myPlane.Banner1.Translate(Vector3.up * 100);
-            //}
-
-            //if (Input.GetKeyDown("3"))
-            //{
-            //    //print(myPlane.Corner_BL.position + " " + Camera.main.transform.position + " " + (Camera.main.transform.position - myPlane.Corner_BL.position));
-            //    if(hitBL.collider != null)
-            //    {
-            //        print("hit = " + hitBL + " name = " + hitBL.transform.name + " hit.collider" + hitBL.collider);
-            //    }
-            //}
-            //RaycastHit hitBR;
-            //Ray rayBR = new Ray(myPlane.Corner_BR.position, Camera.main.transform.position - myPlane.Corner_BR.position);
-            //Physics.Raycast(rayBR, out hitBR);
-            //Debug.DrawLine(rayBR.origin, hitBR.point, Color.red);
-            //if (Input.GetKeyDown("3"))
-            //{
-            //    //print(myPlane.Corner_BR.position + " " + Camera.main.transform.position + " " + (Camera.main.transform.position - myPlane.Corner_BR.position));
-            //    if (hitBL.collider != null)
-            //    {
-            //        print("hit = " + hitBR + " name = " + hitBR.transform.name + " hit.collider" + hitBR.collider);
-            //    }
-            //}
-
-
 
             // Второй баннер с подробной информацией
             if (myBanner2.gameObject.activeInHierarchy && myPlaneVis.ContainsKey(mySelectedPlane))
@@ -2332,6 +2283,40 @@ public class sFlightRadar : MonoBehaviour {
                 myBanner2Fields["Trak"].text = "Trak=" + Math.Round(mySelectedPlaneBigPars.true_track, 2).ToString("####0.0") + "°"; // Курс самолета в градусах
             }
         }
+    }
+
+    // Избавиться от наложения баннеров - 5
+    bool MyFuncBannerOcclusion(MyPlaneVisual myPlane)
+    {
+        // Пускаем луч от правого нижнего угла баннера в камеру
+        Ray rayBR = new Ray(myPlane.Corner_BR.position, Camera.main.transform.position - myPlane.Corner_BR.position);
+        // Ловим пересечения с другими баннерами
+        RaycastHit[] hitBR = new RaycastHit[5]; // массив для пересений
+                                                // Ловим пересечения
+        int hitCount = Physics.RaycastNonAlloc(rayBR, hitBR);
+
+        if (hitCount > 0)
+        {
+            print("Рейс " + myPlane.Call + ": Есть перечения, hitCount = " + hitCount);
+        }
+        
+        // Разбираемся, что наловили
+        for (int j = 0; j < hitCount; j++)
+        {
+            print("Пересечение " + j + ": " + hitBR[j].transform.name);
+            if (hitBR[j].transform.name == "Banner1_Canvas")
+            {
+                print("Баннер рейса " + myPlaneVis[hitBR[j].transform.parent.name].Call + " Код исходящего: " + myPlane.Key + " Код пересекаемого: " + hitBR[j].transform.parent.name);
+                if (myPlane.Key != hitBR[j].transform.parent.name) // Пересечение не с собственным, а с чужим баннером
+                {
+                    //Debug.DrawLine(rayBR.origin, hitBR[j].point, Color.red);
+                    //Debug.DrawLine(rayBR.origin, Camera.main.transform.position, Color.red);
+                    print("myPlane.Banner1.localPosition = " + myPlane.Banner1.localPosition + " myPlane.Banner1.localEulerAngles = " + myPlane.Banner1.localEulerAngles);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // Разобрать полное название модели и вернуть краткое
