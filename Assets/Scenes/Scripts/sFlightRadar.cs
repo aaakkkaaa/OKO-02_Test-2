@@ -2217,7 +2217,10 @@ public class sFlightRadar : MonoBehaviour {
                     //myPos = myPlane.Banner1.localPosition;
                     myPos = Vector3.zero;
                     myPos.y = 180.0f * myScale + 180.0f;
-                    print("Положение баннера относительно самолета: " + myPlane.Banner1.localPosition + ", с коррекцией: " + myPos.y );
+                    if(myPlane.Icao == "24420F" || myPlane.Icao == "244210")
+                    {
+                        print("Положение баннера относительно самолета: " + myPlane.Banner1.localPosition + ", с коррекцией: " + myPos.y);
+                    }
                     myPlane.Banner1.localPosition = myPos;
 
                     // Текст баннера (третья строка - высота)
@@ -2257,12 +2260,12 @@ public class sFlightRadar : MonoBehaviour {
             {
                 // Текущие параметры полета (малая структура)
                 MyPlaneVisual myPlane = myPlaneVis[myPlaneDistance[myDistances[i]]];
-                // Положение баннера без сдвига из-за наложения
-                float myBannerPosShift = myPlane.Banner1.localScale.y * 350;
 
+                // Проверить наложение баннеров
                 if (MyFuncBannerOcclusion(myPlane))
                 {
-                    myPlane.Banner1.Translate(Vector3.up * myBannerPosShift);
+                    // Сдвинуть баннер вдоль локальной оси Y на его высоту с запасом (340+10)
+                    myPlane.Banner1.Translate(Vector3.up * myPlane.Banner1.localScale.y * 350);
                 }
             }
 
@@ -2300,7 +2303,10 @@ public class sFlightRadar : MonoBehaviour {
                 return true;
             }
         }
-        print("Баннер рейса " + myPlane.Call + " (" + myPlane.Key + ") другими баннерами не закрыт");
+        if (myPlane.Icao == "24420F" || myPlane.Icao == "244210")
+        {
+            print("Баннер рейса " + myPlane.Call + " (" + myPlane.Key + ") другими баннерами не закрыт");
+        }
         return false;
     }
 
@@ -2329,7 +2335,10 @@ public class sFlightRadar : MonoBehaviour {
             {
                 if (myPlane.Key != hitBR[j].transform.parent.name) // Пересечение не с собственным, а с чужим баннером
                 {
-                    print("Баннер рейса " + myPlane.Call + " (" + myPlane.Key + ") закрыт баннером рейса " + myPlaneVis[hitBR[j].transform.parent.name].Call + " (" + hitBR[j].transform.parent.name + ")");
+                    if (myPlane.Icao == "24420F" || myPlane.Icao == "244210")
+                    {
+                        print("Баннер рейса " + myPlane.Call + " (" + myPlane.Key + ") закрыт баннером рейса " + myPlaneVis[hitBR[j].transform.parent.name].Call + " (" + hitBR[j].transform.parent.name + ")");
+                    }
                     Debug.DrawLine(rayBR.origin, hitBR[j].point, Color.red);
                     //Debug.DrawLine(rayBR.origin, Camera.main.transform.position, Color.red);
                     return true;
