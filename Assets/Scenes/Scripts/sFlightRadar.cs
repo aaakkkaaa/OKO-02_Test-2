@@ -262,6 +262,9 @@ public class sFlightRadar : MonoBehaviour {
         public Image Banner1Panel;
         public Transform Corner_BL;
         public Transform Corner_BR;
+        public Transform Corner_UL;
+        public Transform Corner_UR;
+        public Transform[] Banner1Corners;
         public Transform Model;
         public String PredictionReason;
         public int BadPosCounter;
@@ -1112,8 +1115,7 @@ public class sFlightRadar : MonoBehaviour {
                         myPlane.Banner1Model = myPlaneVis[myKey].Banner1Model;
                         myPlane.Banner1Alt = myPlaneVis[myKey].Banner1Alt;
                         myPlane.Banner1Panel = myPlaneVis[myKey].Banner1Panel;
-                        myPlane.Corner_BL = myPlaneVis[myKey].Corner_BL;
-                        myPlane.Corner_BR = myPlaneVis[myKey].Corner_BR;
+                        myPlane.Banner1Corners = myPlaneVis[myKey].Banner1Corners;
                         myPlane.Model = myPlaneVis[myKey].Model;
                         myPlane.TrackPoints = myPlaneVis[myKey].TrackPoints;
                         myPlane.StartBezier = myPlaneVis[myKey].StartBezier;
@@ -1220,8 +1222,7 @@ public class sFlightRadar : MonoBehaviour {
                         myPlane.Banner1Model = myPlaneVis[myKey].Banner1Model;
                         myPlane.Banner1Alt = myPlaneVis[myKey].Banner1Alt;
                         myPlane.Banner1Panel = myPlaneVis[myKey].Banner1Panel;
-                        myPlane.Corner_BL = myPlaneVis[myKey].Corner_BL;
-                        myPlane.Corner_BR = myPlaneVis[myKey].Corner_BR;
+                        myPlane.Banner1Corners = myPlaneVis[myKey].Banner1Corners;
                         myPlane.Model = myPlaneVis[myKey].Model;
                         myPlane.TrackPoints = myPlaneVis[myKey].TrackPoints;
                         myPlane.StartBezier = myPlaneVis[myKey].StartBezier;
@@ -1345,9 +1346,10 @@ public class sFlightRadar : MonoBehaviour {
                     }
                     myPlane.TrackPoints = myTP;
 
-                    Transform myObjTr1 = myPlane.GO.transform.GetChild(0); // дочерний объект пока один
+                    Transform myObjTr1 = myPlane.GO.transform.GetChild(0); // дочерний объект пока один -
                     // Это канвас баннера с краткой информацией
                     myPlane.Banner1 = myObjTr1;
+                    myPlane.Banner1Corners = new Transform[4]; // а это углы баннера
                     for (int k = 0; k < myObjTr1.childCount; k++)
                     {
                         Transform myObjTr2 = myObjTr1.GetChild(k);
@@ -1398,10 +1400,16 @@ public class sFlightRadar : MonoBehaviour {
                                 myPlane.Banner1Panel = myObjTr2.GetComponent<Image>(); // Фоновая картинка баннера
                                 break;
                             case "Corner_BL":
-                                myPlane.Corner_BL = myObjTr2; // Нижний левый угол баннера
+                                myPlane.Banner1Corners[0] = myObjTr2; // Нижний левый угол баннера
+                                break;
+                            case "Corner_UL":
+                                myPlane.Banner1Corners[1] = myObjTr2; // Верхний левый угол баннера
+                                break;
+                            case "Corner_UR":
+                                myPlane.Banner1Corners[2] = myObjTr2; // Верхний правый угол баннера
                                 break;
                             case "Corner_BR":
-                                myPlane.Corner_BR = myObjTr2; // Нижний правый угол баннера
+                                myPlane.Banner1Corners[3] = myObjTr2; // Нижний правый угол баннера
                                 break;
                         }
                     }
@@ -2206,8 +2214,10 @@ public class sFlightRadar : MonoBehaviour {
                     }
 
                     // Коррекция положения баннера относительно самолета
-                    myPos = myPlane.Banner1.localPosition;
+                    //myPos = myPlane.Banner1.localPosition;
+                    myPos = Vector3.zero;
                     myPos.y = 180.0f * myScale + 180.0f;
+                    print("Положение баннера относительно самолета: " + myPlane.Banner1.localPosition + ", с коррекцией: " + myPos.y );
                     myPlane.Banner1.localPosition = myPos;
 
                     // Текст баннера (третья строка - высота)
@@ -2231,14 +2241,16 @@ public class sFlightRadar : MonoBehaviour {
                 }
             }
 
+            print("=============================    Кадр " + myFrameCount + "   ===========================================================");
+
             // Избавиться от наложения баннеров - 3
             // Словарь расстояний от камеры до самолетов myPlaneDistance
             // Коллекция значений ключей словаря - преобразовать в массив типа List и отсортировать
-            //Dictionary<float, String>.KeyCollection myPlaneDistanceKeys = myPlaneDistance.Keys;
             List<float> myDistances = new List<float>(myPlaneDistance.Keys);
             myDistances.Sort();
 
             // Избавиться от наложения баннеров - 4
+            // Проверить наличие наложения (функция MyFuncBannerOcclusion) и, если есть, поднять баннер
             print("==================== Избавиться от наложения баннеров - 4 =====================");
             // Для каждого самолета, начиная со второго по дальности
             for (int i = 1; i < myDistances.Count; i++)
@@ -2246,19 +2258,11 @@ public class sFlightRadar : MonoBehaviour {
                 // Текущие параметры полета (малая структура)
                 MyPlaneVisual myPlane = myPlaneVis[myPlaneDistance[myDistances[i]]];
                 // Положение баннера без сдвига из-за наложения
-                float myBannerPosShift = myPlane.Banner1.localPosition.y / 2.0f;
+                float myBannerPosShift = myPlane.Banner1.localScale.y * 350;
 
-                int j = 0;
-                while (MyFuncBannerOcclusion(myPlane))
+                if (MyFuncBannerOcclusion(myPlane))
                 {
-                    Vector3 myPos = myPlane.Banner1.localPosition;
-                    myPos.y = myPos.y + myBannerPosShift;
-                    myPlane.Banner1.localPosition = myPos;
-                    if (j > 20)
-                    {
-                        break;
-                    }
-                    j++;
+                    myPlane.Banner1.Translate(Vector3.up * myBannerPosShift);
                 }
             }
 
@@ -2286,38 +2290,55 @@ public class sFlightRadar : MonoBehaviour {
     }
 
     // Избавиться от наложения баннеров - 5
+    // Функция проверки наличия наложений. Проверка выполняется для массива из 4х объектов, расположенных по углам баннера
     bool MyFuncBannerOcclusion(MyPlaneVisual myPlane)
     {
+        for(int i=0; i<myPlane.Banner1Corners.Length; i++)
+        {
+            if (MyFuncCornerOcclusion(myPlane, myPlane.Banner1Corners[i]))
+            {
+                return true;
+            }
+        }
+        print("Баннер рейса " + myPlane.Call + " (" + myPlane.Key + ") другими баннерами не закрыт");
+        return false;
+    }
+
+    // Избавиться от наложения баннеров - 6
+    // Функция проверки наложения для одного угла
+    bool MyFuncCornerOcclusion(MyPlaneVisual myPlane, Transform myCorner)
+    {
         // Пускаем луч от правого нижнего угла баннера в камеру
-        Ray rayBR = new Ray(myPlane.Corner_BR.position, Camera.main.transform.position - myPlane.Corner_BR.position);
+        Ray rayBR = new Ray(myCorner.position, Camera.main.transform.position - myCorner.position);
+        
         // Ловим пересечения с другими баннерами
         RaycastHit[] hitBR = new RaycastHit[5]; // массив для пересений
-                                                // Ловим пересечения
+        // Ловим пересечения
         int hitCount = Physics.RaycastNonAlloc(rayBR, hitBR);
 
-        if (hitCount > 0)
-        {
-            print("Рейс " + myPlane.Call + ": Есть перечения, hitCount = " + hitCount);
-        }
-        
+        //if (hitCount > 0)
+        //{
+        //    print("Рейс " + myPlane.Call + ": Есть перечения, hitCount = " + hitCount);
+        //}
+
         // Разбираемся, что наловили
         for (int j = 0; j < hitCount; j++)
         {
-            print("Пересечение " + j + ": " + hitBR[j].transform.name);
+            //print("Пересечение " + j + ": " + hitBR[j].transform.name);
             if (hitBR[j].transform.name == "Banner1_Canvas")
             {
-                print("Баннер рейса " + myPlaneVis[hitBR[j].transform.parent.name].Call + " Код исходящего: " + myPlane.Key + " Код пересекаемого: " + hitBR[j].transform.parent.name);
                 if (myPlane.Key != hitBR[j].transform.parent.name) // Пересечение не с собственным, а с чужим баннером
                 {
-                    //Debug.DrawLine(rayBR.origin, hitBR[j].point, Color.red);
+                    print("Баннер рейса " + myPlane.Call + " (" + myPlane.Key + ") закрыт баннером рейса " + myPlaneVis[hitBR[j].transform.parent.name].Call + " (" + hitBR[j].transform.parent.name + ")");
+                    Debug.DrawLine(rayBR.origin, hitBR[j].point, Color.red);
                     //Debug.DrawLine(rayBR.origin, Camera.main.transform.position, Color.red);
-                    print("myPlane.Banner1.localPosition = " + myPlane.Banner1.localPosition + " myPlane.Banner1.localEulerAngles = " + myPlane.Banner1.localEulerAngles);
                     return true;
                 }
             }
         }
         return false;
     }
+
 
     // Разобрать полное название модели и вернуть краткое
     String MyFuncModelName(String myLongName)
