@@ -19,6 +19,7 @@ public class sRecord : MonoBehaviour
     Thread   - Файл для записи в фоновом потоке
     ProcData - Файл для записи в процессе обработки данных (комбинированный поток: фоновый + корутина)
     Update   - Файл для записи в каждом кадре
+    Banners  - Файл для отладки "Избавиться от наложения баннеров"
 
     ADSB_Exchange - Файл для записи исходных данных adsbexchange.com
     OpenSky - Файл для записи исходных данных opensky-network.org
@@ -59,6 +60,8 @@ public class sRecord : MonoBehaviour
             AddToDic("ProcData");
             // Файл для записи в каждом кадре
             AddToDic("Update");
+            // Файл для отладки "Избавиться от наложения баннеров"
+            AddToDic("Banners");
         }
 
         if (_WriteWebData)

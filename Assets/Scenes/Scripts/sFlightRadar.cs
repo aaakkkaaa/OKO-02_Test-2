@@ -1817,6 +1817,8 @@ public class sFlightRadar : MonoBehaviour {
             // Избавиться от наложения баннеров - 1: создаем словарь с расстояниями до самолетов
             // Словарь - текущие расстояния от камеры до самолетов. Ключ - значение расстояния, значения - код ИКАО самолета
             Dictionary<float, String> myPlaneDistance = new Dictionary<float, String>();
+            _Record.MyLog("Banners", "=============================    Кадр " + myFrameCount + "   ===========================================================");
+
 
             // Двигаем самолеты
             foreach (String myKey in myKeys)
@@ -2217,9 +2219,9 @@ public class sFlightRadar : MonoBehaviour {
                     //myPos = myPlane.Banner1.localPosition;
                     myPos = Vector3.zero;
                     myPos.y = 180.0f * myScale + 180.0f;
-                    if(myPlane.Icao == "24420F" || myPlane.Icao == "244210")
+                    if (myPlane.Icao == "24420F" || myPlane.Icao == "244210")
                     {
-                        print("Положение баннера относительно самолета: " + myPlane.Banner1.localPosition + ", с коррекцией: " + myPos.y);
+                        _Record.MyLog("Banners", "Положение баннера относительно самолета " + myPlane.Call + ": " + myPlane.Banner1.localPosition + ", с коррекцией по Y: " + myPos.y);
                     }
                     myPlane.Banner1.localPosition = myPos;
 
@@ -2244,8 +2246,6 @@ public class sFlightRadar : MonoBehaviour {
                 }
             }
 
-            print("=============================    Кадр " + myFrameCount + "   ===========================================================");
-
             // Избавиться от наложения баннеров - 3
             // Словарь расстояний от камеры до самолетов myPlaneDistance
             // Коллекция значений ключей словаря - преобразовать в массив типа List и отсортировать
@@ -2254,12 +2254,21 @@ public class sFlightRadar : MonoBehaviour {
 
             // Избавиться от наложения баннеров - 4
             // Проверить наличие наложения (функция MyFuncBannerOcclusion) и, если есть, поднять баннер
-            print("==================== Избавиться от наложения баннеров - 4 =====================");
+            //_Record.MyLog("Banners", "==================== Избавиться от наложения баннеров - 4 =====================");
             // Для каждого самолета, начиная со второго по дальности
             for (int i = 1; i < myDistances.Count; i++)
             {
                 // Текущие параметры полета (малая структура)
                 MyPlaneVisual myPlane = myPlaneVis[myPlaneDistance[myDistances[i]]];
+
+                // Если предыдущий самолет на похожем расстоянии (разница меньше 100 метров * масштаб модели), отодвигаем баннер еще на 100 метров по оси X * масштаб модели
+                if (myDistances[i] - myDistances[i-1] < myPlane.Banner1.localScale.x * 100.0f)
+                {
+                    _Record.MyLog("Banners", "Самолеты близко, отдовигаем баннер " + myPlane.Call + " на " + myPlane.Banner1.localScale.x * 100 + " метров");
+                    myPlane.Banner1.Translate(Vector3.back * myPlane.Banner1.localScale.x * 100);
+                }
+
+                _Record.MyLog("Banners", "Проверяем затенение баннера для рейса " + myPlane.Call);
 
                 // Проверить наложение баннеров
                 if (MyFuncBannerOcclusion(myPlane))
@@ -2298,6 +2307,7 @@ public class sFlightRadar : MonoBehaviour {
     {
         for(int i=0; i<myPlane.Banner1Corners.Length; i++)
         {
+            _Record.MyLog("Banners", "Угол # " + i + " (" + myPlane.Banner1Corners[i].name + ")");
             if (MyFuncCornerOcclusion(myPlane, myPlane.Banner1Corners[i]))
             {
                 return true;
@@ -2305,7 +2315,7 @@ public class sFlightRadar : MonoBehaviour {
         }
         if (myPlane.Icao == "24420F" || myPlane.Icao == "244210")
         {
-            print("Баннер рейса " + myPlane.Call + " (" + myPlane.Key + ") другими баннерами не закрыт");
+            _Record.MyLog("Banners", "Баннер рейса " + myPlane.Call + " (" + myPlane.Key + ") другими баннерами не закрыт");
         }
         return false;
     }
@@ -2315,12 +2325,12 @@ public class sFlightRadar : MonoBehaviour {
     bool MyFuncCornerOcclusion(MyPlaneVisual myPlane, Transform myCorner)
     {
         // Пускаем луч от правого нижнего угла баннера в камеру
-        Ray rayBR = new Ray(myCorner.position, Camera.main.transform.position - myCorner.position);
+        Ray rayCorner = new Ray(myCorner.position, Camera.main.transform.position - myCorner.position);
         
         // Ловим пересечения с другими баннерами
-        RaycastHit[] hitBR = new RaycastHit[5]; // массив для пересений
+        RaycastHit[] hitCorner = new RaycastHit[5]; // массив для пересений
         // Ловим пересечения
-        int hitCount = Physics.RaycastNonAlloc(rayBR, hitBR);
+        int hitCount = Physics.RaycastNonAlloc(rayCorner, hitCorner);
 
         //if (hitCount > 0)
         //{
@@ -2330,16 +2340,17 @@ public class sFlightRadar : MonoBehaviour {
         // Разбираемся, что наловили
         for (int j = 0; j < hitCount; j++)
         {
-            //print("Пересечение " + j + ": " + hitBR[j].transform.name);
-            if (hitBR[j].transform.name == "Banner1_Canvas")
+            _Record.MyLog("Banners", "Пересечение " + j + ": " + hitCorner[j].transform.name);
+            if (hitCorner[j].transform.name == "Banner1_Canvas")
             {
-                if (myPlane.Key != hitBR[j].transform.parent.name) // Пересечение не с собственным, а с чужим баннером
+                _Record.MyLog("Banners", "Родитель  Banner1_Canvas: " + hitCorner[j].transform.parent.name);
+                if (myPlane.Key != hitCorner[j].transform.parent.name) // Пересечение не с собственным, а с чужим баннером
                 {
                     if (myPlane.Icao == "24420F" || myPlane.Icao == "244210")
                     {
-                        print("Баннер рейса " + myPlane.Call + " (" + myPlane.Key + ") закрыт баннером рейса " + myPlaneVis[hitBR[j].transform.parent.name].Call + " (" + hitBR[j].transform.parent.name + ")");
+                        _Record.MyLog("Banners", "Баннер рейса " + myPlane.Call + " (" + myPlane.Key + ") закрыт баннером рейса " + myPlaneVis[hitCorner[j].transform.parent.name].Call + " (" + hitCorner[j].transform.parent.name + ")");
                     }
-                    Debug.DrawLine(rayBR.origin, hitBR[j].point, Color.red);
+                    //Debug.DrawLine(rayBR.origin, hitBR[j].point, Color.red);
                     //Debug.DrawLine(rayBR.origin, Camera.main.transform.position, Color.red);
                     return true;
                 }
@@ -2435,5 +2446,9 @@ public class sFlightRadar : MonoBehaviour {
         return myDeriv2;
     }
 
+    private void FixedUpdate()
+    {
+        _Record.MyLog("Banners", "Fixed Update");
+    }
 
 }
