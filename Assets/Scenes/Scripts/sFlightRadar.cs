@@ -2263,13 +2263,13 @@ public class sFlightRadar : MonoBehaviour {
 
             // Избавиться от наложения баннеров - 3
             // Словарь расстояний от камеры до самолетов myPlaneDistance
-            // Коллекция значений ключей словаря - преобразовать в массив типа List и отсортировать
+            // Коллекция значений ключей словаря - преобразовать в массив типа List и отсортировать. Обработка в порядке увеличения дальности от камеры до самолета
             List<float> myDistances = new List<float>(myPlaneDistance.Keys);
             myDistances.Sort();
 
             // Избавиться от наложения баннеров - 4
             // Если самолеты слишком близко, раздвинуть баннеры
-            // Для каждого самолета, начиная со второго по дальности
+            // Для каждого самолета, начиная со второго по дальности.
             for (int i = 1; i < myDistances.Count; i++)
             {
                 // Текущие параметры полета (малая структура)
@@ -2277,16 +2277,16 @@ public class sFlightRadar : MonoBehaviour {
                 MyPlaneVisual myPrevPlane = myPlaneVis[myPlaneDistance[myDistances[i-1]]];
 
                 //_Record.MyLog("Banners", "Работаем с баннером рейса " + myPlane.Call + ". Предыдущий рейс - " + myPrevPlane.Call);
-                // Если предыдущий самолет на похожем расстоянии от камеры (разница меньше 100 метров * масштаб модели)
-                float MinDistance = myPlane.Banner1.localScale.x * 100.0f;
+                // Если предыдущий самолет на похожем расстоянии от камеры (разница меньше 300 метров * масштаб модели)
+                float MinDistance = myPlane.Banner1.localScale.x * 300.0f;
                 if (myDistances[i] - myDistances[i - 1] < MinDistance)
                 {
                     // Вторая проверка - расстояние между самолетами
                     if (Vector3.SqrMagnitude(myPlane.Position- myPrevPlane.Position) < MinDistance * MinDistance)
                     {
-                        // Отодвигаем баннер еще на 100 метров по оси X * масштаб модели
-                        //_Record.MyLog("Banners", "Самолеты близко, отдовигаем баннер " + myPlane.Call + " на " + myPlane.Banner1.localScale.x * 100.0f + " метров");
-                        myPlane.Banner1.Translate(Vector3.back * myPlane.Banner1.localScale.x * 100.0f);
+                        // Отодвигаем баннер еще на 300 метров по оси X * масштаб модели
+                        //_Record.MyLog("Banners", "Самолеты близко, отдовигаем баннер " + myPlane.Call + " на " + myPlane.Banner1.localScale.x * 300.0f + " метров");
+                        myPlane.Banner1.Translate(Vector3.back * myPlane.Banner1.localScale.x * 300.0f);
                     }
                 }
             }
@@ -2299,11 +2299,12 @@ public class sFlightRadar : MonoBehaviour {
                 MyPlaneVisual myPlane = myPlaneVis[myPlaneDistance[myDistances[i]]];
 
                 //_Record.MyLog("Banners", "Проверяем затенение баннера для рейса " + myPlane.Call);
+
                 // Проверить наложение баннеров
-                if (MyFuncBannerOcclusion(myPlane))
+                // Сдвигать баннер вдоль локальной оси Y вверх, пока наложение не прекратится
+                while (MyFuncBannerOcclusion(myPlane))
                 {
-                    // Сдвинуть баннер вдоль локальной оси Y на его высоту с запасом (340+10)
-                    myPlane.Banner1.Translate(Vector3.up * myPlane.Banner1.localScale.y * 350);
+                    myPlane.Banner1.Translate(Vector3.up * myPlane.Banner1.localScale.y * 40);
                 }
             }
 
@@ -2314,9 +2315,12 @@ public class sFlightRadar : MonoBehaviour {
                 // Текущие параметры полета (малая структура)
                 MyPlaneVisual myPlane = myPlaneVis[myKeys[i]];
 
-                Vector3[] BannerLineVerts = { myPlane.BannerLine_Pos[0].position, myPlane.BannerLine_Pos[1].position };
-                myPlane.BannerLine.GetComponent<LineRenderer>().SetPositions(BannerLineVerts);
-                myPlane.BannerLine.GetComponent<LineRenderer>().widthMultiplier = 30.0f;
+                if(myPlane.GO) // Выполнять только для самолетов, у котороых уже созданы геймобджекты со всеми дочерними объектами
+                {
+                    Vector3[] BannerLineVerts = { myPlane.BannerLine_Pos[0].position, myPlane.BannerLine_Pos[1].position };
+                    myPlane.BannerLine.GetComponent<LineRenderer>().SetPositions(BannerLineVerts);
+                    myPlane.BannerLine.GetComponent<LineRenderer>().widthMultiplier = 30.0f;
+                }
             }
 
             // Второй баннер с подробной информацией
