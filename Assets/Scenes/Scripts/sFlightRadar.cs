@@ -2242,7 +2242,6 @@ public class sFlightRadar : MonoBehaviour {
                     }
 
                     // Коррекция положения баннера относительно самолета
-                    //myPos = myPlane.Banner1.localPosition;
                     myPos = Vector3.zero;
                     myPos.y = 180.0f * myScale + 180.0f;
 
@@ -2259,7 +2258,7 @@ public class sFlightRadar : MonoBehaviour {
                     {
                         myPlane.Banner1Alt.text = "FL " + (Math.Round(myPlane.GO.transform.position.y / 100, 2) / myFeet).ToString("####0"); // Высота (эшелон) в футах
                     }
-                    if(myPlane.Speed.y > 0) // Указатель вертикальной скорости
+                    if (myPlane.Speed.y > 0) // Указатель вертикальной скорости
                     {
                         myPlane.Banner1Alt.text = myPlane.Banner1Alt.text + " ▲";
                     }
@@ -2284,7 +2283,7 @@ public class sFlightRadar : MonoBehaviour {
             {
                 // Текущие параметры полета (малая структура)
                 MyPlaneVisual myPlane = myPlaneVis[myPlaneDistance[myDistances[i]]];
-                MyPlaneVisual myPrevPlane = myPlaneVis[myPlaneDistance[myDistances[i-1]]];
+                MyPlaneVisual myPrevPlane = myPlaneVis[myPlaneDistance[myDistances[i - 1]]];
 
                 // Если предыдущий самолет на похожем расстоянии от камеры (разница меньше 300 метров * масштаб модели)
                 float MinDistance = myPlane.Banner1.localScale.x * 300.0f;
@@ -2293,7 +2292,7 @@ public class sFlightRadar : MonoBehaviour {
                 {
                     // Вторая проверка - расстояние между самолетами
                     //_Record.MyLog("Banners", "     Расстояние между самолетами = " + Vector3.Magnitude(myPlane.Position - myPrevPlane.Position));
-                    if (Vector3.SqrMagnitude(myPlane.Position- myPrevPlane.Position) < MinDistance * MinDistance * 4)
+                    if (Vector3.SqrMagnitude(myPlane.Position - myPrevPlane.Position) < MinDistance * MinDistance * 4)
                     {
                         // Отодвигаем баннер еще на 300 метров по оси X * масштаб модели
                         //_Record.MyLog("Banners", "Самолеты близко, отдовигаем баннер " + myPlane.Call + " на " + myPlane.Banner1.localScale.x * 300.0f + " метров");
@@ -2380,10 +2379,10 @@ public class sFlightRadar : MonoBehaviour {
     // Функция проверки наличия наложений. Проверка выполняется для массива из 4х объектов, расположенных по углам баннера
     bool MyFuncBannerOcclusion(MyPlaneVisual myPlane)
     {
-        for(int i=0; i<myPlane.Banner1Corners.Length; i++)
-        {
-            //_Record.MyLog("Banners", "Угол # " + i + " (" + myPlane.Banner1Corners[i].name + ")");
-            if (MyFuncCornerOcclusion(myPlane, myPlane.Banner1Corners[i]))
+        for (int i = 0; i < myPlane.Banner1Corners.Length; i++)
+            {
+                //_Record.MyLog("Banners", "Угол # " + i + " (" + myPlane.Banner1Corners[i].name + ")");
+                if (MyFuncCornerOcclusion(myPlane, myPlane.Banner1Corners[i]))
             {
                 return true;
             }
