@@ -2344,11 +2344,20 @@ public class sFlightRadar : MonoBehaviour {
                 // Текущие параметры полета (малая структура)
                 MyPlaneVisual myPlane = myPlaneVis[myKeys[i]];
 
-                if(myPlane.GO) // Выполнять только для самолетов, у котороых уже созданы геймобджекты со всеми дочерними объектами
+                if (myPlane.GO) // Выполнять только для самолетов, у котороых уже созданы геймобджекты со всеми дочерними объектами
                 {
-                    Vector3[] BannerLineVerts = { myPlane.BannerLine_Pos[0].position, myPlane.BannerLine_Pos[1].position };
-                    myPlane.BannerLine.GetComponent<LineRenderer>().SetPositions(BannerLineVerts);
-                    myPlane.BannerLine.GetComponent<LineRenderer>().widthMultiplier = 30.0f;
+                    // Если баннер самолета был сдвинут
+                    if (myPlane.Banner1Params.ShiftStepCount > 0)
+                    {
+                        myPlane.BannerLine.gameObject.SetActive(true);
+                        Vector3[] BannerLineVerts = { myPlane.BannerLine_Pos[0].position, myPlane.BannerLine_Pos[1].position };
+                        myPlane.BannerLine.GetComponent<LineRenderer>().SetPositions(BannerLineVerts);
+                        myPlane.BannerLine.GetComponent<LineRenderer>().widthMultiplier = 30.0f;
+                    }
+                    else // Если баннер самолета не был сдвинут - прячем выносную линию
+                    {
+                        myPlane.BannerLine.gameObject.SetActive(false);
+                    }
                 }
             }
 
