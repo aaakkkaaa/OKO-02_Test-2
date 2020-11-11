@@ -13,7 +13,10 @@ public class sMortarMovement : MonoBehaviour
     float _vertSpeed = 2f;
 
     [SerializeField]
-    float _yawSpeed = 1f;
+    float _yawSpeed = 0.2f;
+
+    [SerializeField]
+    float _pitchSpeed = 0.2f;
 
     Camera _referenceCamera;
 
@@ -38,10 +41,12 @@ public class sMortarMovement : MonoBehaviour
     
     // Положение в начале перелета
     Vector3 myStartPos;
-    Vector3 myStarttEu;
+    Vector3 myStartEu;
+    Vector3 myCameraStartEu;
     // Положение в конце перелета
     Vector3 myEndPos;
     Vector3 myEndEu;
+    Vector3 myCameraEndEu;
     // Флаг перелета, блокирует управление
     bool myFlight = false;
     // Время начала перелета, сек
@@ -65,6 +70,7 @@ public class sMortarMovement : MonoBehaviour
     void Awake()
     {
         _referenceCamera = Camera.main;
+        myCameraEndEu = _referenceCamera.transform.localEulerAngles;
         _originalRotation = Quaternion.Euler(0, transform.eulerAngles.y, 0);
 
         if (_referenceCamera == null)
@@ -90,8 +96,9 @@ public class sMortarMovement : MonoBehaviour
         {
             float myInterpolant = (Time.time - myStartTime) / myFlightTime;
             transform.localPosition = Vector3.Lerp(myStartPos, myEndPos, myInterpolant);
-            transform.localRotation = Quaternion.Lerp(Quaternion.Euler(myStarttEu), Quaternion.Euler(myEndEu), myInterpolant);
-            if(myInterpolant > 1)
+            transform.localRotation = Quaternion.Lerp(Quaternion.Euler(myStartEu), Quaternion.Euler(myEndEu), myInterpolant);
+            _referenceCamera.transform.localRotation = Quaternion.Lerp(Quaternion.Euler(myCameraStartEu), Quaternion.Euler(myCameraEndEu), myInterpolant);
+            if (myInterpolant > 1)
             {
                 myFlight = false;
             }
@@ -104,24 +111,26 @@ public class sMortarMovement : MonoBehaviour
                 transform.parent = null; // Выйти в корень иерархии сцены
                 myStartTime = Time.time;
                 myStartPos = transform.position;
-                myStarttEu = transform.eulerAngles;
+                myStartEu = transform.eulerAngles;
+                myCameraStartEu = _referenceCamera.transform.localEulerAngles;
                 myEndPos = myHomePos;
                 myEndEu = myHomeEu;
 
                 myFlight = true;
             }
-            // Команда на перелет к башне
+            /*// Команда на перелет к башне
             else if (Input.GetKeyDown("t"))
             {
                 transform.parent = null; // Выйти в корень иерархии сцены
                 myStartTime = Time.time;
                 myStartPos = transform.position;
-                myStarttEu = transform.eulerAngles;
+                myStartEu = transform.eulerAngles;
+                myCameraStartEu = _referenceCamera.transform.localEulerAngles;
                 myEndPos = myTowerPos;
                 myEndEu = myTowerEu;
 
                 myFlight = true;
-            }
+            }*/
             // Команда сесть на хвост
             else if (Input.GetKeyDown("p"))
             {
@@ -148,8 +157,8 @@ public class sMortarMovement : MonoBehaviour
                         transform.parent = myPlanesControllerTr.GetChild(myNearestPlaneNumber);
                         // Перелететь "на хвост" ближайшего самолета
                         myStartPos = transform.localPosition;
-                        myStarttEu = transform.localEulerAngles;
-                        myStarttEu.y = myFuncNormalizeAngle(myStarttEu.y); // нормализовать курсовой угол в диапазоне +/- 180 градусов
+                        myStartEu = transform.localEulerAngles;
+                        myStartEu.y = myFuncNormalizeAngle(myStartEu.y); // нормализовать курсовой угол в диапазоне +/- 180 градусов
                         myEndPos = myTailPos;
                         myEndEu = Vector3.zero;
                         myStartTime = Time.time;
@@ -177,11 +186,25 @@ public class sMortarMovement : MonoBehaviour
                 z = Input.GetAxis("Vertical");
                 y = Input.GetAxis("Throttle");
                 w = Input.GetAxis("Twist");
-                float myCameraPitch = Input.GetAxis("Hat_Vert");
+                float myCameraPitch = Input.GetAxis("Hat_Vert"); // Наклон камеры по тангажу
+
+                // Колесико мыши
+                float mouseWheelInput = Input.GetAxis("Mouse ScrollWheel");
+                if((Input.GetKey("left shift") || Input.GetKey("right shift"))) // если нажата клавиша Shift, левая или правая
+                {
+                    myCameraPitch += mouseWheelInput * 10; // Добавим к наклону камеры по тангажу
+                }
+                else // если никакая нажата клавиша Shift не нажата
+                {
+                    y += mouseWheelInput * 20; // Перемещение по вертикали
+                }
+
 
                 // Наклонить камеру по тангажу - отработаем сразу. Работает только если VR не активен (проект запущен без маски VR)
+                // Дополнительно - наклон камеры по колесику мыши + Shift
+
                 Vector3 myCamEu = _referenceCamera.transform.localEulerAngles;
-                myCamEu.x = myCamEu.x + myCameraPitch;
+                myCamEu.x += myCameraPitch * _pitchSpeed;
                 _referenceCamera.transform.localEulerAngles = myCamEu;
 
                 // Клавиатура и мышь - сигналы суммируются (и с джойстиком). Исключение - нажатая левая кнопка мыши отрабатывается сразу, независимо от других сигналов (то есть, по сути, тоже суммируется)
@@ -195,12 +218,12 @@ public class sMortarMovement : MonoBehaviour
                 if (Input.GetMouseButton(0))
                 {
                     Vector3 myCurMousePos = Input.mousePosition;
-                    x = x + (myCurMousePos.x - _oldMousePos.x) * _panSpeed / 100f;
-                    z = z + (myCurMousePos.y - _oldMousePos.y) * _panSpeed / 100f;
+                    x += (myCurMousePos.x - _oldMousePos.x) * _panSpeed / 100f;
+                    z += (myCurMousePos.y - _oldMousePos.y) * _panSpeed / 100f;
                 }
 
                 // Перемещение по колесику мыши
-                y = y + Input.GetAxis("Mouse ScrollWheel") * 20;
+                //y += Input.GetAxis("Mouse ScrollWheel") * 20;
 
                 // Поворот при нажатой правой кнопке мыши. Установим параметр поворота w
                 if (Input.GetMouseButtonDown(1))
@@ -212,11 +235,11 @@ public class sMortarMovement : MonoBehaviour
                     myCurMouseX = Input.mousePosition.x;
                     if (myCurMouseX > myOldMouseX)
                     {
-                        w = w + 1.0f;
+                        w += 1.0f;
                     }
                     else if (myCurMouseX < myOldMouseX)
                     {
-                        w = w - 1.0f;
+                        w -= 1.0f;
                     }
                 }
 
@@ -287,7 +310,7 @@ public class sMortarMovement : MonoBehaviour
         _CameraPlumb.parent = null;
         transform.parent = _CameraPlumb;
         // Возьмем углы Эйлера
-        myEu.y += w; // Повернуть по курсу
+        myEu.y += w * _yawSpeed; // Повернуть по курсу
         _CameraPlumb.eulerAngles = myEu; // Применить
         // Вернем отцов и детей на место
         _CameraPlumb.parent = transform;

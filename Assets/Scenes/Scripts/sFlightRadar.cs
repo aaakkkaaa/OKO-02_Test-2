@@ -118,9 +118,14 @@ public class sFlightRadar : MonoBehaviour {
     //[SerializeField]
     public bool DataFromWeb = true; // Получать данные из интернета. В противном случае из файла Record.txt
 
+    // Параметры опасного сближения. Используются в корутине myFuncProximity()
+    [SerializeField]
+    float _HorisontalMinDistance = 10000.0f;  // 10 километров
+    [SerializeField]
+    float _VerticalMinDistance = 304.8f; // 1000 футов (10 единиц эшелона)
 
     // ******************************************************************
-    
+
     // Структура (на самом деле класс) для текущих параметров самолета, полученных от opensky-network.org ("Большая")
     // Пришлось переделать в класс, так как экземпляры System.Reflection.FieldInfo не отрабатывают метод setValue для структур.
     class myPlaneParameters_OpenSky
@@ -265,6 +270,7 @@ public class sFlightRadar : MonoBehaviour {
         //public int ShiftStepCount; // Счетик шагов для сдвига беннера при наложении
         public Transform BannerLine;
         public Transform[] BannerLine_Pos;
+        public Transform BannerAlertFrame;
         public Transform Model;
         public String PredictionReason;
         public int BadPosCounter;
@@ -569,6 +575,9 @@ public class sFlightRadar : MonoBehaviour {
         {
             StartCoroutine(myFuncInnsbrukSpecial());
         }
+
+        // Проверять все пары самолетов на опасное сближение
+        StartCoroutine(myFuncProximity());
     }
 
     IEnumerator myFuncInnsbrukSpecial()
@@ -866,14 +875,17 @@ public class sFlightRadar : MonoBehaviour {
                             _Record.MyLog("ProcData", "=== myFuncThread(): " + i + " ключ = " + myKey + " Самолет сел более 10 минут назад. Удаляем из списка севших, продолжаем обработку его данных");
                             myLandedPlanes.Remove(myKey); // Удаляем самолет из списка севших, продолжаем обработку его данных
                         }
-                        try // Создадим лог-файлы для самолета
+                        if (_Record.WriteLog)
                         {
-                            _Record.AddToDic(myKey);
-                            _Record.AddToDic(myKey + "_Data");
-                        }
-                        catch (Exception myEx)
-                        {
-                            _Record.MyLog("ProcData", "=== myFuncThread(): Создание лог-файла для самолета с ключом = " + myKey + " Ошибка: " + myEx.Message);
+                            try // Создадим лог-файлы для самолета
+                            {
+                                _Record.AddToDic(myKey);
+                                _Record.AddToDic(myKey + "_Data");
+                            }
+                            catch (Exception myEx)
+                            {
+                                _Record.MyLog("ProcData", "=== myFuncThread(): Создание лог-файла для самолета с ключом = " + myKey + " Ошибка: " + myEx.Message);
+                            }
                         }
                     }
 
@@ -1120,6 +1132,7 @@ public class sFlightRadar : MonoBehaviour {
                         //myPlane.ShiftStepCount = myPlaneVis[myKey].ShiftStepCount;
                         myPlane.BannerLine = myPlaneVis[myKey].BannerLine;
                         myPlane.BannerLine_Pos = myPlaneVis[myKey].BannerLine_Pos;
+                        myPlane.BannerAlertFrame = myPlaneVis[myKey].BannerAlertFrame;
                         myPlane.Model = myPlaneVis[myKey].Model;
                         myPlane.TrackPoints = myPlaneVis[myKey].TrackPoints;
                         myPlane.StartBezier = myPlaneVis[myKey].StartBezier;
@@ -1231,6 +1244,7 @@ public class sFlightRadar : MonoBehaviour {
                         //myPlane.ShiftStepCount = myPlaneVis[myKey].ShiftStepCount;
                         myPlane.BannerLine = myPlaneVis[myKey].BannerLine;
                         myPlane.BannerLine_Pos = myPlaneVis[myKey].BannerLine_Pos;
+                        myPlane.BannerAlertFrame = myPlaneVis[myKey].BannerAlertFrame;
                         myPlane.Model = myPlaneVis[myKey].Model;
                         myPlane.TrackPoints = myPlaneVis[myKey].TrackPoints;
                         myPlane.StartBezier = myPlaneVis[myKey].StartBezier;
@@ -1423,6 +1437,9 @@ public class sFlightRadar : MonoBehaviour {
                                 break;
                             case "BannerLine_Pos1":
                                 myPlane.BannerLine_Pos[1] = myObjTr2; // точка выносной линии на баннере
+                                break;
+                            case "BannerAlertFrame":
+                                myPlane.BannerAlertFrame = myObjTr2; // тревожная рамка при опасном сближении
                                 break;
                         }
                     }
@@ -1794,15 +1811,18 @@ public class sFlightRadar : MonoBehaviour {
         bool myAddInfoWasChaged = false; // Признак изменения дополнительной информации для отображения на баннере самолета с краткой информацией
 
         // Сначала чуть-чуть управления
-        if (Input.GetKeyDown("-")) // Клавиша "минус": "Опустить" все самолеты на 10 метров (увеличить высоту аэропорта над уровнем моря)
+        if (Input.GetKeyDown("-")) // Клавиша "минус":
         {
-            myAirport_ALt += 10.0f;
-            myWorldMessage.myFuncShowMessage("Самолеты ниже на 10 м.\nНовая высота Н.У.М. = " + myAirport_ALt, 3.0f);
+            // Уменьшить коеффициент ускорения времени на 1
+            if(_Time.TimeSpeed > 1)
+            {
+                _Time.ChangeTimeSpeed(-1);
+            }
         }
-        else if (Input.GetKeyDown("=")) // Клавиша "плюс": "Поднять" все самолеты на 10 метров (уменьшить высоту аэропорта над уровнем моря)
+        else if (Input.GetKeyDown("=")) // Клавиша "плюс":
         {
-            myAirport_ALt -= 10.0f;
-            myWorldMessage.myFuncShowMessage("Самолеты выше на 10 м.\nНовая высота Н.У.М. = " + myAirport_ALt, 3.0f);
+            // Увеличить коеффициент ускорения времени на 1
+            _Time.ChangeTimeSpeed(1);
         }
         else if (Input.GetKeyDown("i")) // Клавиша "i": Вывести / убрать с баннера самолета с краткой информацией дополнительную информацию
         {
@@ -2527,5 +2547,159 @@ public class sFlightRadar : MonoBehaviour {
             + myTim * myPlane.TrackPoints[3].position[myIndex]) * 6.0f;
         return myDeriv2;
     }
+
+
+
+    // Проверять все пары самолетов на опасное сближение
+    IEnumerator myFuncProximity()
+    {
+        // Квадрат минимально допустимого расстояния по горизонтали (квадраты расстояний сравнивать удобнее)
+        float HorMinSqr = _HorisontalMinDistance * _HorisontalMinDistance;
+
+        // Создать словарь пар самолетов, находящихся в опасном сближении. Ключ -  код ИКАО самолета 1 + код ИКАО самолета 2, значения - массив из этих же ключей
+        Dictionary<String, string[]> planePairs = new Dictionary<String, string[]>();
+
+        if (_Record.WriteAlerts)
+        {
+            try // Создадим лог-файл опасных сближений
+            {
+                _Record.AddToDic("Proximity");
+            }
+            catch (Exception myEx)
+            {
+                _Record.MyLog("=== myFuncProximity(): Создание лог-файла опасных сближений Proximity.txt. Ошибка: " + myEx.Message);
+            }
+        }
+
+        while (true)
+        {
+
+            yield return new WaitForSeconds(2.0f / _Time.TimeSpeed);
+
+            if (myPlaneVisValues != null)
+            {
+
+                //print("== Проверка на опасное сближение ==============");
+
+                string curTime = _Time.DT.AddSeconds(_Time.CurrentTime() / 1000).ToString("HH:mm:ss", CultureInfo.CurrentCulture);
+
+                // Создаем список ключей (коды ICAO) - из коллекции ключей словаря всех отображаемых самолетов
+                List<String> myKeys = new List<String>(myPlaneVisKeys);
+
+                // Проверить все пары самолетов, определив для каждой пары расстояние (квадрат)
+                for(int i = 0; i < myKeys.Count; i++)
+                {
+                    for (int j = i + 1; j < myKeys.Count; j++)
+                    {
+                        // Если оба самолета с этими ключами есть в словаре самолетов
+                        if (myPlaneVis.ContainsKey(myKeys[i]) && myPlaneVis.ContainsKey(myKeys[j]))
+                        {
+                            // Если обе структуры (малые) содержат ссылки на GameObject (бывает, что самолет еще создан не до конца)
+                            if (myPlaneVis[myKeys[i]].GO && myPlaneVis[myKeys[j]].GO)
+                            {
+                                // Вектор от одного самолета в паре до другого
+                                Vector3 Delta3D = myPlaneVis[myKeys[j]].GO.transform.position - myPlaneVis[myKeys[i]].GO.transform.position;
+                                // Квадрат расстояния по горизонтали
+                                float HorDistSqr = new Vector2(Delta3D.x, Delta3D.z).sqrMagnitude;
+                                // Расстояние по вертикали
+                                float VertDist = Mathf.Round(Mathf.Abs(Delta3D.y));
+
+                                // print(myPlaneVis[myKeys[i]].Call + " / " + myPlaneVis[myKeys[j]].Call + ": HorDist = " + Mathf.Sqrt(HorDistSqr) + " VertDist = " + VertDist);
+
+                                // Расстояния и по горизонтали и по вертикали меньше допустимых
+                                if (HorDistSqr <= HorMinSqr && VertDist <= _VerticalMinDistance)
+                                {
+                                    // Массив из двух значений кода ИКАО - пара ключей самолетов
+                                    string[] Pair = new string[2];
+                                    Pair[0] = myKeys[i];
+                                    Pair[1] = myKeys[j];
+                                    string KeyPair = Pair[0] + Pair[1];
+                                    if (!planePairs.ContainsKey(KeyPair)) // Если состояния опасного сближения еще не было
+                                    {
+                                        //print(curTime + ": Опасное сближение началось. " + myPlaneVis[Pair[0]].Call + " / " + myPlaneVis[Pair[1]].Call + ": HorDist = " + Mathf.Round(Mathf.Sqrt(HorDistSqr)) + " VertDist = " + VertDist);
+                                        _Record.AlertsLog("Proximity", "[" + curTime + "] Опасное сближение началось: "
+                                            + myPlaneVis[Pair[0]].Call + "/" + myPlaneVis[Pair[1]].Call
+                                            + " (" + Pair[0] + "/" + Pair[1] + ") "
+                                            + myPlaneVis[Pair[0]].GO.transform.position.ToString("F0") + " "
+                                            + myPlaneVis[Pair[1]].GO.transform.position.ToString("F0")
+                                            + " HorDist=" + Mathf.Round(Mathf.Sqrt(HorDistSqr)) + " VertDist = " + VertDist);
+                                        // Добавить пару в словарь опасных сближений
+                                        planePairs.Add(KeyPair, Pair);
+                                        // Включить тревожные рамки на баннерах
+                                        myPlaneVis[Pair[0]].BannerAlertFrame.gameObject.SetActive(true);
+                                        myPlaneVis[Pair[1]].BannerAlertFrame.gameObject.SetActive(true);
+                                    }
+                                    else // Если состояния опасного сближения уже было
+                                    {
+                                        //print(curTime + ": Опасное сближение продолжается. " + myPlaneVis[Pair[0]].Call + " / " + myPlaneVis[Pair[1]].Call + ": HorDist = " + Mathf.Round(Mathf.Sqrt(HorDistSqr)) + " VertDist = " + VertDist);
+                                        // Включить тревожные рамки на баннерах
+                                        myPlaneVis[Pair[0]].BannerAlertFrame.gameObject.SetActive(true);
+                                        myPlaneVis[Pair[1]].BannerAlertFrame.gameObject.SetActive(true);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                //print("В словаре опасных сближений " + planePairs.Count + " пар самолетов");
+
+                // Создаем список ключей - из коллекции ключей словаря пар в опасном сближении
+                List<String> KeyPairs = new List<String>(planePairs.Keys);
+
+                // Проверить все пары в словаре опасных сближений, может у кого уже закончилось
+                //for(int i = 0; i < planePairs.Count; i++)
+                foreach (string KeyPair in KeyPairs)
+                {
+                    // Извлечем массив (пару ключей) из содержания элемента словаря пар в опасном сближении
+                    string[] Pair = planePairs[KeyPair];
+                    // Если самолеты с этими ключами еще на сцене
+                    if (myPlaneVis.ContainsKey(Pair[0]) && myPlaneVis.ContainsKey(Pair[1]))
+                    {
+                        // Вектор от одного самолета в паре до другого
+                        Vector3 Delta3D = myPlaneVis[Pair[1]].GO.transform.position - myPlaneVis[Pair[0]].GO.transform.position;
+                        // Квадрат расстояния по горизонтали
+                        float HorDistSqr = new Vector2(Delta3D.x, Delta3D.z).sqrMagnitude;
+                        // Расстояние по вертикали
+                        float VertDist = Mathf.Round(Mathf.Abs(Delta3D.y));
+                        // Расстояния по горизонтали или по вертикали больше минимально допустимых
+                        if (HorDistSqr > HorMinSqr || VertDist > _VerticalMinDistance)
+                        {
+                            //print(curTime + ": Опасное сближение закончилось. " + myPlaneVis[Pair[0]].Call + " / " + myPlaneVis[Pair[1]].Call + ": HorDist = " + Mathf.Round(Mathf.Sqrt(HorDistSqr)) + " VertDist = " + VertDist);
+                            _Record.AlertsLog("Proximity", "[" + curTime + "] Опасное сближение закончилось: " 
+                                + myPlaneVis[Pair[0]].Call + "/" + myPlaneVis[Pair[1]].Call
+                                + " (" + Pair[0] + "/" + Pair[1] + ") "
+                                + myPlaneVis[Pair[0]].GO.transform.position.ToString("F0") + " "
+                                + myPlaneVis[Pair[1]].GO.transform.position.ToString("F0")
+                                + " HorDist=" + Mathf.Round(Mathf.Sqrt(HorDistSqr)) + " VertDist = " + VertDist);
+                            // Удалить запись из словаря пар, находящихся в опасном сближении
+                            planePairs.Remove(KeyPair);
+                            // Вылючить тревожные рамки на баннерах
+                            myPlaneVis[Pair[0]].BannerAlertFrame.gameObject.SetActive(false);
+                            myPlaneVis[Pair[1]].BannerAlertFrame.gameObject.SetActive(false);
+                        }
+                    }
+                    else // по крайней мере один из самолетов пары отсутствует на сцене
+                    {
+                        //print(curTime + ": Одного или обоих самолетов пары " + Pair[0] + " / " + Pair[1] + " больше нет в зоне УВД");
+                        _Record.AlertsLog("Proximity", "[" + curTime + "] Опасное сближение закончилось: Одного или обоих самолетов из пары ("
+                             + Pair[0] + "/" + Pair[1] + ") больше нет в зоне УВД");
+                        // Удалить запись из словаря пар, находящихся в опасном сближении
+                        planePairs.Remove(KeyPair);
+                        // Вылючить тревожные рамки на баннерах
+                        if (myPlaneVis.ContainsKey(Pair[0]))
+                        {
+                            myPlaneVis[Pair[0]].BannerAlertFrame.gameObject.SetActive(false);
+                        }
+                        if (myPlaneVis.ContainsKey(Pair[1]))
+                        {
+                            myPlaneVis[Pair[1]].BannerAlertFrame.gameObject.SetActive(false);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
 }

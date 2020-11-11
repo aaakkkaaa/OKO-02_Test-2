@@ -27,16 +27,17 @@ public class sRecord : MonoBehaviour
 
 
     // Отладочный параметр - запиcывать ли логи
-    [SerializeField]
-    bool _WriteLog = true;
+    public bool WriteLog = true;
 
     // Запиcывать ли исходные данные web
     [SerializeField]
     bool _WriteWebData = true;
 
+    // Запиcывать ли протокол опасных сближений
+    public bool WriteAlerts = true;
+
     // Параметры времени
     sTime _Time;
-
 
 
     void Awake()
@@ -48,7 +49,7 @@ public class sRecord : MonoBehaviour
         Directory.CreateDirectory(RecDir);
         RecDir = Path.Combine(Directory.GetCurrentDirectory(), RecDir);
 
-        if (_WriteLog)
+        if (WriteLog)
         {
             // Файл для записи по умолчанию
             AddToDic("Main");
@@ -90,7 +91,7 @@ public class sRecord : MonoBehaviour
     // Запись в указанный файл
     public void MyLog(string myRecName, String myInfo)
     {
-        if (_WriteLog)
+        if (WriteLog)
         {
             int myCurrentTime = _Time.CurrentTime();
             _RecFile[myRecName].WriteLine(myInfo.Replace(".", ",") + " CurrentTime = " + myCurrentTime);
@@ -100,7 +101,7 @@ public class sRecord : MonoBehaviour
     // Запись в указанный файл с возможностью не добавлять время
     public void MyLog(string myRecName, String myInfo, bool myTime)
     {
-        if (_WriteLog)
+        if (WriteLog)
         {
             if (myTime)
             {
@@ -117,7 +118,7 @@ public class sRecord : MonoBehaviour
     // Запись в файл по умолчанию
     public void MyLog(String myInfo)
     {
-        if (_WriteLog)
+        if (WriteLog)
         {
             _RecFile["Main"].WriteLine(myInfo.Replace(".", ","));
         }
@@ -126,7 +127,7 @@ public class sRecord : MonoBehaviour
     // Запись в два файла
     public void MyLog(string myRecName1, string myRecName2, String myInfo)
     {
-        if (_WriteLog)
+        if (WriteLog)
         {
             int myCurrentTime = _Time.CurrentTime();
             _RecFile[myRecName1].WriteLine(myInfo.Replace(".", ",") + " CurrentTime = " + myCurrentTime);
@@ -143,12 +144,22 @@ public class sRecord : MonoBehaviour
         }
    }
 
+    // Запись в файл опасных сближений
+    public void AlertsLog(string myRecName, string myInfo)
+    {
+        if (WriteAlerts)
+        {
+            _RecFile[myRecName].WriteLine(myInfo);
+        }
+    }
+
+
     // ******************************************************************
 
     // Закрыть один лог-файл и удалить его запись из словаря лог-файлов
     public void Close(string myRecName)
     {
-        if (_WriteLog)
+        if (WriteLog)
         {
             _RecFile[myRecName].Close();
             _RecFile.Remove(myRecName);
